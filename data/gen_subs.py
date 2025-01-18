@@ -1,11 +1,62 @@
 import sys
 import os
 from PySide6.QtWidgets import (QApplication, QMainWindow, QPushButton, QVBoxLayout, 
-                             QWidget, QLabel, QProgressBar, QFileDialog)
+                             QWidget, QLabel, QProgressBar, QFileDialog, QFrame)
 from PySide6.QtCore import Qt, QThread, Signal
+from PySide6.QtGui import QColor, QPalette
 import whisper
 from moviepy import VideoFileClip
 import tempfile
+
+STYLES = """
+QMainWindow {
+    background-color: #1e1e1e;
+}
+
+QLabel {
+    color: #ffffff;
+    font-size: 14px;
+    padding: 10px;
+}
+
+QPushButton {
+    background-color: #007acc;
+    color: white;
+    border: none;
+    padding: 12px 24px;
+    border-radius: 6px;
+    font-size: 14px;
+    min-width: 120px;
+}
+
+QPushButton:hover {
+    background-color: #0098ff;
+}
+
+QPushButton:disabled {
+    background-color: #4d4d4d;
+    color: #808080;
+}
+
+QProgressBar {
+    border: none;
+    background-color: #333333;
+    border-radius: 4px;
+    height: 8px;
+    text-align: center;
+}
+
+QProgressBar::chunk {
+    background-color: #007acc;
+    border-radius: 4px;
+}
+
+QFrame#container {
+    background-color: #2d2d2d;
+    border-radius: 10px;
+    padding: 20px;
+}
+"""
 
 class SubtitleGenerator(QThread):
     progress = Signal(int)
@@ -85,25 +136,42 @@ class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
         self.setWindowTitle("AutoCaption")
-        self.setMinimumSize(400, 200)
+        self.setMinimumSize(500, 300)
+        self.setStyleSheet(STYLES)
 
-        central_widget = QWidget()
-        self.setCentralWidget(central_widget)
-        layout = QVBoxLayout(central_widget)
+        main_widget = QWidget()
+        self.setCentralWidget(main_widget)
+        main_layout = QVBoxLayout(main_widget)
+        main_layout.setContentsMargins(40, 40, 40, 40)
 
+        container = QFrame()
+        container.setObjectName("container")
+        container_layout = QVBoxLayout(container)
+        container_layout.setSpacing(20)
+
+        title_label = QLabel("AutoCaption")
+        title_label.setAlignment(Qt.AlignCenter)
+        title_label.setStyleSheet("font-size: 24px; font-weight: bold; color: #ffffff; padding: 0;")
+        
         self.status_label = QLabel("Select a video to generate subtitles")
         self.status_label.setAlignment(Qt.AlignCenter)
         self.status_label.setWordWrap(True)
+        self.status_label.setStyleSheet("color: #cccccc;")
         
         self.progress_bar = QProgressBar()
         self.progress_bar.hide()
-
+        
         self.select_button = QPushButton("Select Video")
+        self.select_button.setCursor(Qt.PointingHandCursor)
         self.select_button.clicked.connect(self.select_video)
 
-        layout.addWidget(self.status_label)
-        layout.addWidget(self.progress_bar)
-        layout.addWidget(self.select_button)
+        container_layout.addWidget(title_label)
+        container_layout.addWidget(self.status_label)
+        container_layout.addWidget(self.progress_bar)
+        container_layout.addWidget(self.select_button, alignment=Qt.AlignCenter)
+        container_layout.addStretch()
+
+        main_layout.addWidget(container)
 
     def select_video(self):
         file_path, _ = QFileDialog.getOpenFileName(
@@ -112,7 +180,6 @@ class MainWindow(QMainWindow):
             "",
             "Video Files (*.mp4 *.avi *.mkv *.mov)"
         )
-        print(f"Selected file path: {file_path}")
         
         if file_path:
             self.process_video(file_path)
@@ -121,6 +188,7 @@ class MainWindow(QMainWindow):
         self.select_button.setEnabled(False)
         self.progress_bar.show()
         self.status_label.setText("Processing video...")
+        self.status_label.setStyleSheet("color: #007acc;")
 
         self.worker = SubtitleGenerator(video_path)
         self.worker.progress.connect(self.update_progress)
@@ -133,16 +201,19 @@ class MainWindow(QMainWindow):
 
     def on_finished(self, srt_path):
         self.status_label.setText(f"Subtitles generated successfully!\nSaved to: {srt_path}")
+        self.status_label.setStyleSheet("color: #6cc644;")
         self.select_button.setEnabled(True)
         self.progress_bar.hide()
 
     def on_error(self, error_message):
         self.status_label.setText(f"Error: {error_message}")
+        self.status_label.setStyleSheet("color: #f14c4c;")
         self.select_button.setEnabled(True)
         self.progress_bar.hide()
 
 def main():
     app = QApplication(sys.argv)
+    app.setStyle('Fusion')
     window = MainWindow()
     window.show()
     sys.exit(app.exec())
