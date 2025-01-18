@@ -97,7 +97,7 @@ class MainWindow(QMainWindow):
         
         self.progress_bar = QProgressBar()
         self.progress_bar.hide()
-        
+
         self.select_button = QPushButton("Select Video")
         self.select_button.clicked.connect(self.select_video)
 
