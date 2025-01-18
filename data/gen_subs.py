@@ -15,6 +15,7 @@ class SubtitleGenerator(QThread):
     def __init__(self, video_path):
         super().__init__()
         self.video_path = video_path
+        self.model = "base"
 
     def run(self):
         temp_audio = None
@@ -30,7 +31,7 @@ class SubtitleGenerator(QThread):
             self.progress.emit(30)
 
             try:
-                model = whisper.load_model("base")
+                model = whisper.load_model(self.model)
                 self.progress.emit(50)
 
                 result = model.transcribe(temp_audio)
@@ -83,14 +84,14 @@ class SubtitleGenerator(QThread):
 class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
-        self.setWindowTitle("Video Subtitler")
+        self.setWindowTitle("AutoCaption")
         self.setMinimumSize(400, 200)
 
         central_widget = QWidget()
         self.setCentralWidget(central_widget)
         layout = QVBoxLayout(central_widget)
 
-        self.status_label = QLabel("Select a video file to generate subtitles")
+        self.status_label = QLabel("Select a video to generate subtitles")
         self.status_label.setAlignment(Qt.AlignCenter)
         self.status_label.setWordWrap(True)
         
@@ -111,6 +112,7 @@ class MainWindow(QMainWindow):
             "",
             "Video Files (*.mp4 *.avi *.mkv *.mov)"
         )
+        print(f"Selected file path: {file_path}")
         
         if file_path:
             self.process_video(file_path)
